@@ -18,8 +18,8 @@ package org.gradle.api.experimental.android.extensions.linting;
 
 import com.android.build.api.dsl.ApplicationExtension;
 import com.android.build.api.dsl.LibraryExtension;
-import org.gradle.api.Project;
 import com.android.build.api.dsl.Lint;
+import org.gradle.api.Project;
 import org.gradle.api.experimental.common.extensions.HasLinting;
 
 public final class LintSupport {

@@ -5,16 +5,20 @@ import org.gradle.api.Project;
 import org.gradle.api.experimental.common.CliExecutablesSupport;
 import org.gradle.api.experimental.cpp.internal.DefaultCppApplicationBuildModel;
 import org.gradle.api.file.RegularFile;
-import org.gradle.api.internal.plugins.BindsProjectType;
-import org.gradle.api.internal.plugins.ProjectTypeBinding;
-import org.gradle.api.internal.plugins.ProjectTypeBindingBuilder;
+import org.gradle.api.plugins.PluginManager;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Exec;
 import org.gradle.api.tasks.TaskProvider;
+import org.gradle.features.annotations.BindsProjectType;
+import org.gradle.features.binding.ProjectTypeBinding;
+import org.gradle.features.binding.ProjectTypeBindingBuilder;
+import org.gradle.features.registration.TaskRegistrar;
 import org.gradle.language.cpp.CppComponent;
 import org.gradle.language.cpp.CppExecutable;
 import org.gradle.language.cpp.plugins.CppApplicationPlugin;
 import org.gradle.util.internal.TextUtil;
+
+import javax.inject.Inject;
 
 @SuppressWarnings("UnstableApiUsage")
 @BindsProjectType(StandaloneCppApplicationPlugin.Binding.class)
@@ -25,14 +29,17 @@ public abstract class StandaloneCppApplicationPlugin implements Plugin<Project> 
         @Override
         public void bind(ProjectTypeBindingBuilder builder) {
             builder.bindProjectType(CPP_APPLICATION, CppApplication.class, (context, definition, buildModel) ->{
-                context.getProject().getPlugins().apply(CppApplicationPlugin.class);
-                CliExecutablesSupport.configureRunTasks(context.getProject().getTasks(), buildModel);
+                Services services = context.getObjectFactory().newInstance(Services.class);
+                services.getPluginManager().apply(CppApplicationPlugin.class);
 
-                ((DefaultCppApplicationBuildModel) buildModel).setCppComponent(context.getProject().getExtensions().getByType(CppComponent.class));
+                CliExecutablesSupport.configureRunTasks(services.getTaskRegistrar(), buildModel);
 
-                linkDefinitionToPlugin(context.getProject(), definition, buildModel);
+                ((DefaultCppApplicationBuildModel) buildModel).setCppComponent(services.getProject().getExtensions().getByType(CppComponent.class));
+
+                linkDefinitionToPlugin(services.getProject(), definition, buildModel);
             })
             .withUnsafeDefinition()
+            .withUnsafeApplyAction()
             .withBuildModelImplementationType(DefaultCppApplicationBuildModel.class);
         }
 
@@ -54,6 +61,17 @@ public abstract class StandaloneCppApplicationPlugin implements Plugin<Project> 
                     }
                 })
             );
+        }
+
+        interface Services {
+            @Inject
+            PluginManager getPluginManager();
+
+            @Inject
+            TaskRegistrar getTaskRegistrar();
+
+            @Inject
+            Project getProject();
         }
     }
 

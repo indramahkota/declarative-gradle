@@ -5,13 +5,16 @@ import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.experimental.kmp.internal.KotlinPluginSupport;
-import org.gradle.api.internal.plugins.BindsProjectType;
-import org.gradle.api.internal.plugins.ProjectTypeBindingBuilder;
-import org.gradle.api.internal.plugins.ProjectTypeBinding;
+import org.gradle.api.plugins.PluginManager;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.TaskContainer;
+import org.gradle.features.annotations.BindsProjectType;
+import org.gradle.features.binding.ProjectTypeBinding;
+import org.gradle.features.binding.ProjectTypeBindingBuilder;
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget;
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension;
+
+import javax.inject.Inject;
 
 /**
  * Creates a declarative {@link KmpLibrary} DSL model, applies the official KMP plugin,
@@ -37,20 +40,20 @@ public abstract class StandaloneKmpLibraryPlugin implements Plugin<Project> {
         public void bind(ProjectTypeBindingBuilder builder) {
             builder.bindProjectType(KOTLIN_LIBRARY, KmpLibrary.class,
                     (context, definition, buildModel) -> {
-                        Project project = context.getProject();
+                        Services services = context.getObjectFactory().newInstance(Services.class);
 
                         // Apply the official KMP plugin
-                        project.getPlugins().apply("org.jetbrains.kotlin.multiplatform");
+                        services.getPluginManager().apply("org.jetbrains.kotlin.multiplatform");
                         ((DefaultKotlinMultiplatformBuildModel)buildModel).setKotlinMultiplatformExtension(
-                                project.getExtensions().getByType(KotlinMultiplatformExtension.class)
+                                services.getProject().getExtensions().getByType(KotlinMultiplatformExtension.class)
                         );
                         buildModel.getGroup().convention(definition.getGroup());
                         buildModel.getVersion().convention(definition.getVersion());
 
                         // This stuff can be wired up immediately
-                        linkDslModelToPluginLazy(definition, buildModel, project.getConfigurations());
+                        linkDslModelToPluginLazy(definition, buildModel, services.getProject().getConfigurations());
                         // This stuff must be wired up in an afterEvaluate block
-                        project.afterEvaluate(p -> {
+                        services.getProject().afterEvaluate(p -> {
                             ifPresent(buildModel.getGroup(), p::setGroup);
                             ifPresent(buildModel.getVersion(), p::setVersion);
                             linkDslModelToPlugin(definition, buildModel, p.getTasks());
@@ -58,6 +61,7 @@ public abstract class StandaloneKmpLibraryPlugin implements Plugin<Project> {
                     }
             )
             .withUnsafeDefinition()
+            .withUnsafeApplyAction()
             .withBuildModelImplementationType(DefaultKotlinMultiplatformBuildModel.class);
         }
 
@@ -135,6 +139,14 @@ public abstract class StandaloneKmpLibraryPlugin implements Plugin<Project> {
             if (property.isPresent()) {
                 action.execute(property.get());
             }
+        }
+
+        interface Services {
+            @Inject
+            PluginManager getPluginManager();
+
+            @Inject
+            Project getProject();
         }
     }
 }

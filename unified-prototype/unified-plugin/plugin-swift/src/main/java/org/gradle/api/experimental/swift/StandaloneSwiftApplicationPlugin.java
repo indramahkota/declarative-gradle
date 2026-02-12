@@ -6,17 +6,21 @@ import org.gradle.api.experimental.common.CliExecutablesSupport;
 import org.gradle.api.experimental.swift.internal.DefaultSwiftApplicationBuildModel;
 import org.gradle.api.experimental.swift.internal.SwiftPluginSupport;
 import org.gradle.api.file.RegularFile;
-import org.gradle.api.internal.plugins.BindsProjectType;
-import org.gradle.api.internal.plugins.ProjectTypeBinding;
-import org.gradle.api.internal.plugins.ProjectTypeBindingBuilder;
+import org.gradle.api.plugins.PluginManager;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Exec;
 import org.gradle.api.tasks.TaskProvider;
+import org.gradle.features.annotations.BindsProjectType;
+import org.gradle.features.binding.ProjectTypeBinding;
+import org.gradle.features.binding.ProjectTypeBindingBuilder;
+import org.gradle.features.registration.TaskRegistrar;
 import org.gradle.language.swift.SwiftBinary;
 import org.gradle.language.swift.SwiftComponent;
 import org.gradle.language.swift.SwiftExecutable;
 import org.gradle.language.swift.plugins.SwiftApplicationPlugin;
 import org.gradle.util.internal.TextUtil;
+
+import javax.inject.Inject;
 
 @SuppressWarnings("UnstableApiUsage")
 @BindsProjectType(StandaloneSwiftApplicationPlugin.Binding.class)
@@ -28,14 +32,16 @@ public abstract class StandaloneSwiftApplicationPlugin implements Plugin<Project
         @Override
         public void bind(ProjectTypeBindingBuilder builder) {
             builder.bindProjectType(SWIFT_APPLICATION, SwiftApplication.class, (context, definition, buildModel) -> {
-                context.getProject().getPlugins().apply(SwiftApplicationPlugin.class);
-                CliExecutablesSupport.configureRunTasks(context.getProject().getTasks(), buildModel);
+                Services services = context.getObjectFactory().newInstance(Services.class);
+                services.getPluginManager().apply(SwiftApplicationPlugin.class);
+                CliExecutablesSupport.configureRunTasks(services.getTaskRegistrar(), buildModel);
 
-                ((DefaultSwiftApplicationBuildModel)buildModel).setSwiftComponent(context.getProject().getExtensions().getByType(SwiftComponent.class));
+                ((DefaultSwiftApplicationBuildModel)buildModel).setSwiftComponent(services.getProject().getExtensions().getByType(SwiftComponent.class));
 
-                linkDefinitionToPlugin(context.getProject(), definition, buildModel);
+                linkDefinitionToPlugin(services.getProject(), definition, buildModel);
             })
             .withUnsafeDefinition()
+            .withUnsafeApplyAction()
             .withBuildModelImplementationType(DefaultSwiftApplicationBuildModel.class);
         }
 
@@ -57,6 +63,17 @@ public abstract class StandaloneSwiftApplicationPlugin implements Plugin<Project
                     }
                 }
             });
+        }
+
+        interface Services {
+            @Inject
+            PluginManager getPluginManager();
+
+            @Inject
+            TaskRegistrar getTaskRegistrar();
+
+            @Inject
+            Project getProject();
         }
     }
 

@@ -7,9 +7,13 @@ import org.gradle.api.experimental.android.AndroidBindingSupport;
 import org.gradle.api.experimental.android.application.internal.DefaultAndroidApplicationBuildModel;
 import org.gradle.api.experimental.android.extensions.linting.LintSupport;
 import org.gradle.api.experimental.android.nia.NiaSupport;
-import org.gradle.api.internal.plugins.BindsProjectType;
-import org.gradle.api.internal.plugins.ProjectTypeBinding;
-import org.gradle.api.internal.plugins.ProjectTypeBindingBuilder;
+import org.gradle.api.plugins.PluginManager;
+import org.gradle.api.provider.ProviderFactory;
+import org.gradle.features.annotations.BindsProjectType;
+import org.gradle.features.binding.ProjectTypeBinding;
+import org.gradle.features.binding.ProjectTypeBindingBuilder;
+
+import javax.inject.Inject;
 
 import static org.gradle.api.experimental.android.AndroidSupport.ifPresent;
 
@@ -27,7 +31,9 @@ public abstract class StandaloneAndroidApplicationPlugin implements Plugin<Proje
         @Override
         public void bind(ProjectTypeBindingBuilder builder) {
             builder.bindProjectType(ANDROID_APPLICATION, AndroidApplication.class, (context, definition, buildModel) -> {
-                AndroidBindingSupport.bindCommon(context, definition);
+                Services services = context.getObjectFactory().newInstance(Services.class);
+
+                AndroidBindingSupport.bindCommon(services.getProviderFactory(), definition);
 
                 // Setup application-specific conventions
                 definition.getDependencyGuard().getEnabled().convention(false);
@@ -44,20 +50,21 @@ public abstract class StandaloneAndroidApplicationPlugin implements Plugin<Proje
 
                 // Register an afterEvaluate listener before we apply the Android plugin to ensure we can
                 // run actions before Android does.
-                context.getProject().afterEvaluate(p -> linkDefinitionToPlugin(p, definition, buildModel));
+                services.getProject().afterEvaluate(p -> linkDefinitionToPlugin(p, definition, buildModel));
 
                 // Apply the official Android plugin.
-                context.getProject().getPlugins().apply("com.android.application");
-                context.getProject().getPlugins().apply("org.jetbrains.kotlin.android");
+                services.getPluginManager().apply("com.android.application");
+                services.getPluginManager().apply("org.jetbrains.kotlin.android");
 
                 ((DefaultAndroidApplicationBuildModel)buildModel).setApplicationExtension(
-                        context.getProject().getExtensions().getByType(ApplicationExtension.class)
+                        services.getProject().getExtensions().getByType(ApplicationExtension.class)
                 );
 
                 // After AGP creates configurations, link deps to the collectors
-                AndroidBindingSupport.linkCommonDependencies(definition.getDependencies(), context.getProject().getConfigurations());
+                AndroidBindingSupport.linkCommonDependencies(definition.getDependencies(), services.getProject().getConfigurations());
             })
             .withUnsafeDefinition()
+            .withUnsafeApplyAction()
             .withBuildModelImplementationType(DefaultAndroidApplicationBuildModel.class);
         }
 
@@ -83,6 +90,17 @@ public abstract class StandaloneAndroidApplicationPlugin implements Plugin<Proje
             if (NiaSupport.isNiaProject(project)) {
                 NiaSupport.configureNiaApplication(project, definition);
             }
+        }
+
+        interface Services {
+            @Inject
+            PluginManager getPluginManager();
+
+            @Inject
+            ProviderFactory getProviderFactory();
+
+            @Inject
+            Project getProject();
         }
     }
 

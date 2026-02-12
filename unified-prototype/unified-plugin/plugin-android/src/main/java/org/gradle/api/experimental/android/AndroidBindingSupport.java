@@ -16,7 +16,7 @@ import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.experimental.android.extensions.testing.AndroidTestDependencies;
 import org.gradle.api.experimental.android.extensions.testing.TestOptions;
 import org.gradle.api.experimental.android.extensions.testing.Testing;
-import org.gradle.api.internal.plugins.ProjectFeatureApplicationContext;
+import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.tasks.testing.Test;
 import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension;
 
@@ -30,7 +30,7 @@ import static org.gradle.api.experimental.android.nia.NiaSupport.configureBaseli
 public abstract class AndroidBindingSupport {
     public static final int DEFAULT_MIN_ANDROID_SDK = 21;
 
-    public static void bindCommon(ProjectFeatureApplicationContext context, AndroidSoftware definition) {
+    public static void bindCommon(ProviderFactory providerFactory, AndroidSoftware definition) {
         // Setup Android software conventions
         definition.getMinSdk().convention(DEFAULT_MIN_ANDROID_SDK); // https://developer.android.com/build/multidex#mdex-gradle
         definition.getVectorDrawablesUseSupportLibrary().convention(false);
@@ -42,7 +42,7 @@ public abstract class AndroidBindingSupport {
         definition.getBuildTypes().getRelease().getBaselineProfile().getEnabled().convention(false);
 
         // Setup desugaring conventions and desugar automatically when JDK > 8 is targeted
-        definition.getCoreLibraryDesugaring().getEnabled().convention(context.getProject().provider(() -> definition.getJdkVersion().get() > 8));
+        definition.getCoreLibraryDesugaring().getEnabled().convention(providerFactory.provider(() -> definition.getJdkVersion().get() > 8));
         definition.getCoreLibraryDesugaring().getLibVersion().convention("2.0.4");
 
         // Setup Serialization conventions

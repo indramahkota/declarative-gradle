@@ -1,6 +1,7 @@
 package org.gradle.api.experimental.kmp;
 
 import kotlin.Unit;
+import org.apache.commons.text.WordUtils;
 import org.gradle.api.Action;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
@@ -9,21 +10,25 @@ import org.gradle.api.experimental.common.CliExecutablesSupport;
 import org.gradle.api.experimental.kmp.internal.KotlinPluginSupport;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.Directory;
-import org.gradle.api.internal.plugins.BindsProjectType;
-import org.gradle.api.internal.plugins.ProjectTypeBindingBuilder;
-import org.gradle.api.internal.plugins.ProjectTypeBinding;
 import org.gradle.api.model.ObjectFactory;
+import org.gradle.api.plugins.PluginManager;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.AbstractExecTask;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.testing.Test;
+import org.gradle.features.annotations.BindsProjectType;
+import org.gradle.features.binding.ProjectTypeBinding;
+import org.gradle.features.binding.ProjectTypeBindingBuilder;
+import org.gradle.features.file.ProjectFeatureLayout;
+import org.gradle.features.registration.TaskRegistrar;
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget;
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension;
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJvmCompilation;
 import org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest;
-import org.apache.commons.text.WordUtils;
+
+import javax.inject.Inject;
 
 /**
  * Creates a declarative {@link KmpApplication} DSL model, applies the official KMP plugin,
@@ -48,37 +53,38 @@ public abstract class StandaloneKmpApplicationPlugin implements Plugin<Project> 
         public void bind(ProjectTypeBindingBuilder builder) {
             builder.bindProjectType(KOTLIN_APPLICATION, KmpApplication.class,
                     (context, definition, buildModel) -> {
-                        Project project = context.getProject();
+                        Services services = context.getObjectFactory().newInstance(Services.class);
 
                         // Set conventional custom test suit locations as src/<SUITE_NAME>
                         definition.getTargetsContainer().getStore().withType(KmpApplicationJvmTarget.class).all(target -> {
                             target.getTesting().getTestSuites().forEach((name, testSuite) -> {
-                                Directory srcRoot = project.getLayout().getProjectDirectory().dir("src/jvm" + WordUtils.capitalize(name));
+                                Directory srcRoot = services.getProjectFeatureLayout().getProjectDirectory().dir("src/jvm" + WordUtils.capitalize(name));
                                 testSuite.getSourceRoot().convention(srcRoot);
                             });
                         });
 
                         // Apply the official KMP plugin
-                        project.getPlugins().apply("org.jetbrains.kotlin.multiplatform");
-                        CliExecutablesSupport.configureRunTasks(context.getProject().getTasks(), buildModel);
+                        services.getPluginManager().apply("org.jetbrains.kotlin.multiplatform");
+                        CliExecutablesSupport.configureRunTasks(services.getTaskRegistrar(), buildModel);
 
                         ((DefaultKotlinMultiplatformBuildModel)buildModel).setKotlinMultiplatformExtension(
-                                project.getExtensions().getByType(KotlinMultiplatformExtension.class)
+                                services.getProject().getExtensions().getByType(KotlinMultiplatformExtension.class)
                         );
                         buildModel.getGroup().convention(definition.getGroup());
                         buildModel.getVersion().convention(definition.getVersion());
 
                         // This stuff can be wired up immediately
-                        linkDslModelToPluginLazy(definition, buildModel, project.getConfigurations(), project.getTasks());
+                        linkDslModelToPluginLazy(definition, buildModel, services.getProject().getConfigurations(), services.getProject().getTasks());
                         // This stuff must be wired up in an afterEvaluate block
-                        project.afterEvaluate(p -> {
+                        services.getProject().afterEvaluate(p -> {
                             ifPresent(buildModel.getGroup(), p::setGroup);
                             ifPresent(buildModel.getVersion(), p::setVersion);
-                            linkDslModelToPlugin(definition, buildModel, project.getConfigurations(), project.getTasks(), project.getObjects());
+                            linkDslModelToPlugin(definition, buildModel, services.getProject().getConfigurations(), services.getProject().getTasks(), services.getObjectFactory());
                         });
                     }
             )
             .withUnsafeDefinition()
+            .withUnsafeApplyAction()
             .withBuildModelImplementationType(DefaultKotlinMultiplatformBuildModel.class);
         }
 
@@ -218,6 +224,23 @@ public abstract class StandaloneKmpApplicationPlugin implements Plugin<Project> 
             if (property.isPresent()) {
                 action.execute(property.get());
             }
+        }
+
+        interface Services {
+            @Inject
+            PluginManager getPluginManager();
+
+            @Inject
+            TaskRegistrar getTaskRegistrar();
+
+            @Inject
+            ProjectFeatureLayout getProjectFeatureLayout();
+
+            @Inject
+            ObjectFactory getObjectFactory();
+
+            @Inject
+            Project getProject();
         }
     }
 }

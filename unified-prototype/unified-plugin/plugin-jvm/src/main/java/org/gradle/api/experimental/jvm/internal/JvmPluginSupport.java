@@ -1,15 +1,10 @@
 package org.gradle.api.experimental.jvm.internal;
 
-import org.gradle.api.NamedDomainObjectProvider;
-import org.gradle.api.Project;
 import org.gradle.api.artifacts.ConfigurationContainer;
-import org.gradle.api.artifacts.DependencyScopeConfiguration;
-import org.gradle.api.artifacts.ResolvableConfiguration;
 import org.gradle.api.artifacts.dsl.DependencyFactory;
 import org.gradle.api.experimental.common.ApplicationDependencies;
 import org.gradle.api.experimental.common.BasicDependencies;
 import org.gradle.api.experimental.common.LibraryDependencies;
-import org.gradle.api.experimental.java.checkstyle.CheckstyleDefinition;
 import org.gradle.api.experimental.jvm.HasJavaTarget;
 import org.gradle.api.experimental.jvm.HasJavaTargets;
 import org.gradle.api.experimental.jvm.HasJvmApplication;
@@ -17,20 +12,16 @@ import org.gradle.api.experimental.jvm.JavaTarget;
 import org.gradle.api.experimental.jvm.extensions.testing.TestDependencies;
 import org.gradle.api.experimental.jvm.extensions.testing.Testing;
 import org.gradle.api.file.Directory;
-import org.gradle.api.file.FileCollection;
-import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.plugins.JavaApplication;
 import org.gradle.api.plugins.JavaPluginExtension;
-import org.gradle.api.plugins.quality.Checkstyle;
 import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.tasks.SourceSet;
-import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.testing.Test;
+import org.gradle.features.file.ProjectFeatureLayout;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
 import org.gradle.jvm.toolchain.JavaToolchainService;
-import org.gradle.language.base.plugins.LifecycleBasePlugin;
 
 import java.util.Collections;
 
@@ -83,7 +74,7 @@ public class JvmPluginSupport {
         javaApplication.setApplicationDefaultJvmArgs(application.getJvmArguments().get());
     }
 
-    public static void setupCommonSourceSet(SourceSet commonSources, ProjectLayout layout) {
+    public static void setupCommonSourceSet(SourceSet commonSources, ProjectFeatureLayout layout) {
         Directory srcDir = layout.getProjectDirectory().dir("src").dir("common").dir("java");
         commonSources.getJava().setSrcDirs(Collections.singleton(srcDir));
     }

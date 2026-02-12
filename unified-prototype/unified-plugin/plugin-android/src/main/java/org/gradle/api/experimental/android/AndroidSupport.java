@@ -20,8 +20,6 @@ import org.gradle.api.Action;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 
-import java.util.List;
-
 /**
  * Static util class containing common methods.
  */

@@ -8,13 +8,15 @@ import org.gradle.api.experimental.jvm.DefaultJavaApplicationBuildModel;
 import org.gradle.api.experimental.jvm.DefaultJavaBuildModel;
 import org.gradle.api.experimental.jvm.JavaApplicationBuildModel;
 import org.gradle.api.experimental.jvm.internal.JvmPluginSupport;
-import org.gradle.api.internal.plugins.BindsProjectType;
-import org.gradle.api.internal.plugins.ProjectTypeBindingBuilder;
-import org.gradle.api.internal.plugins.ProjectTypeBinding;
 import org.gradle.api.plugins.ApplicationPlugin;
 import org.gradle.api.plugins.JavaPluginExtension;
+import org.gradle.api.plugins.PluginManager;
 import org.gradle.api.plugins.jvm.JvmTestSuite;
 import org.gradle.api.tasks.TaskContainer;
+import org.gradle.features.annotations.BindsProjectType;
+import org.gradle.features.binding.ProjectTypeBinding;
+import org.gradle.features.binding.ProjectTypeBindingBuilder;
+import org.gradle.features.registration.TaskRegistrar;
 import org.gradle.jvm.toolchain.JavaToolchainService;
 import org.gradle.testing.base.TestingExtension;
 
@@ -42,26 +44,38 @@ public abstract class StandaloneJavaApplicationPlugin implements Plugin<Project>
         public void bind(ProjectTypeBindingBuilder builder) {
             builder.bindProjectType(JAVA_APPLICATION, JavaApplication.class,
                     (context, definition, buildModel) -> {
-                        Project project = context.getProject();
-                        project.getPlugins().apply(ApplicationPlugin.class);
-                        CliExecutablesSupport.configureRunTasks(context.getProject().getTasks(), buildModel);
+                        Services services = context.getObjectFactory().newInstance(Services.class);
+                        services.getPluginManager().apply(ApplicationPlugin.class);
+                        CliExecutablesSupport.configureRunTasks(services.getTaskRegistrar(), buildModel);
                         ((DefaultJavaBuildModel) buildModel).setJavaPluginExtension(
-                                project.getExtensions().getByType(JavaPluginExtension.class)
+                                services.getProject().getExtensions().getByType(JavaPluginExtension.class)
                         );
                         ((DefaultJavaApplicationBuildModel) buildModel).setJavaApplicationExtension(
-                                project.getExtensions().getByType(org.gradle.api.plugins.JavaApplication.class)
+                                services.getProject().getExtensions().getByType(org.gradle.api.plugins.JavaApplication.class)
                         );
 
                         context.getObjectFactory().newInstance(ModelToPluginLinker.class).link(
                                 definition,
                                 buildModel,
-                                project.getConfigurations(),
-                                project.getTasks()
+                                services.getProject().getConfigurations(),
+                                services.getProject().getTasks()
                         );
                     }
             )
             .withUnsafeDefinition()
+            .withUnsafeApplyAction()
             .withBuildModelImplementationType(DefaultJavaApplicationBuildModel.class);
+        }
+
+        interface Services {
+            @Inject
+            PluginManager getPluginManager();
+
+            @Inject
+            TaskRegistrar getTaskRegistrar();
+
+            @Inject
+            Project getProject();
         }
     }
 

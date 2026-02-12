@@ -1,9 +1,6 @@
 package org.gradle.test.fixtures.file;
 
 import org.gradle.internal.os.OperatingSystem;
-import org.gradle.test.fixtures.file.DoesNotSupportNonAsciiPaths;
-import org.gradle.test.fixtures.file.TestFile;
-import org.gradle.test.fixtures.file.AbstractTestDirectoryProvider;
 import org.junit.runners.model.FrameworkMethod;
 
 import java.io.File;

@@ -16,7 +16,6 @@
 
 package org.gradle.api.experimental.android.extensions;
 
-import org.gradle.api.Action;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Nested;
 

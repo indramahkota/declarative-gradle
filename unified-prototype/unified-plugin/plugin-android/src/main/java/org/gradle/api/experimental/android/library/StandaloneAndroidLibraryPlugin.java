@@ -11,10 +11,14 @@ import org.gradle.api.experimental.android.AndroidBindingSupport;
 import org.gradle.api.experimental.android.extensions.linting.LintSupport;
 import org.gradle.api.experimental.android.library.internal.DefaultAndroidLibraryBuildModel;
 import org.gradle.api.experimental.android.nia.NiaSupport;
-import org.gradle.api.internal.plugins.BindsProjectType;
-import org.gradle.api.internal.plugins.ProjectTypeBinding;
+import org.gradle.api.plugins.PluginManager;
+import org.gradle.api.provider.ProviderFactory;
+import org.gradle.features.annotations.BindsProjectType;
+import org.gradle.features.binding.ProjectTypeBinding;
+import org.gradle.features.binding.ProjectTypeBindingBuilder;
 import org.jetbrains.kotlin.com.google.common.base.Preconditions;
 
+import javax.inject.Inject;
 import java.util.Objects;
 import java.util.Set;
 
@@ -32,9 +36,11 @@ public abstract class StandaloneAndroidLibraryPlugin implements Plugin<Project> 
 
     static class Binding implements ProjectTypeBinding {
         @Override
-        public void bind(org.gradle.api.internal.plugins.ProjectTypeBindingBuilder builder) {
+        public void bind(ProjectTypeBindingBuilder builder) {
             builder.bindProjectType(ANDROID_LIBRARY, AndroidLibrary.class, (context, definition, buildModel) -> {
-                AndroidBindingSupport.bindCommon(context, definition);
+                Services services = context.getObjectFactory().newInstance(Services.class);
+
+                AndroidBindingSupport.bindCommon(services.getProviderFactory(), definition);
 
                 // Setup library-specific conventions
                 definition.getProtobuf().getEnabled().convention(false);
@@ -42,20 +48,21 @@ public abstract class StandaloneAndroidLibraryPlugin implements Plugin<Project> 
 
                 // Register an afterEvaluate listener before we apply the Android plugin to ensure we can
                 // run actions before Android does.
-                context.getProject().afterEvaluate(p -> linkDefinitionToPlugin(p, definition, buildModel));
+                services.getProject().afterEvaluate(p -> linkDefinitionToPlugin(p, definition, buildModel));
 
                 // Apply the official Android plugin and support for Kotlin
-                context.getProject().getPlugins().apply("com.android.library");
-                context.getProject().getPlugins().apply("org.jetbrains.kotlin.android");
+                services.getPluginManager().apply("com.android.library");
+                services.getPluginManager().apply("org.jetbrains.kotlin.android");
 
                 ((DefaultAndroidLibraryBuildModel) buildModel).setLibraryExtension(
-                        context.getProject().getExtensions().getByType(LibraryExtension.class)
+                        services.getProject().getExtensions().getByType(LibraryExtension.class)
                 );
 
                 // After AGP creates configurations, link deps to the collectors
-                linkCommonDependencies(definition.getDependencies(), context.getProject().getConfigurations());
+                linkCommonDependencies(definition.getDependencies(), services.getProject().getConfigurations());
             })
             .withUnsafeDefinition()
+            .withUnsafeApplyAction()
             .withBuildModelImplementationType(DefaultAndroidLibraryBuildModel.class);
         }
 
@@ -113,6 +120,17 @@ public abstract class StandaloneAndroidLibraryPlugin implements Plugin<Project> 
         private void linkCommonDependencies(AndroidLibraryDependencies dependencies, ConfigurationContainer configurations) {
             AndroidBindingSupport.linkCommonDependencies(dependencies, configurations);
             configurations.getByName("api").fromDependencyCollector(dependencies.getApi()); // API deps added for libraries
+        }
+
+        interface Services {
+            @Inject
+            PluginManager getPluginManager();
+
+            @Inject
+            ProviderFactory getProviderFactory();
+
+            @Inject
+            Project getProject();
         }
     }
 

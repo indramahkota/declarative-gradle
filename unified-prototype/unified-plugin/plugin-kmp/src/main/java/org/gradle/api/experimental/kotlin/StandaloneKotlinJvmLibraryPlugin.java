@@ -5,13 +5,16 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.experimental.jvm.internal.JvmPluginSupport;
 import org.gradle.api.experimental.kmp.internal.KotlinPluginSupport;
-import org.gradle.api.internal.plugins.BindsProjectType;
-import org.gradle.api.internal.plugins.ProjectTypeBindingBuilder;
-import org.gradle.api.internal.plugins.ProjectTypeBinding;
 import org.gradle.api.plugins.JavaPluginExtension;
+import org.gradle.api.plugins.PluginManager;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.testing.Test;
+import org.gradle.features.annotations.BindsProjectType;
+import org.gradle.features.binding.ProjectTypeBinding;
+import org.gradle.features.binding.ProjectTypeBindingBuilder;
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension;
+
+import javax.inject.Inject;
 
 /**
  * Creates a declarative {@link KotlinJvmApplication} DSL model, applies the official Kotlin and application plugin,
@@ -33,18 +36,19 @@ public abstract class StandaloneKotlinJvmLibraryPlugin implements Plugin<Project
         public void bind(ProjectTypeBindingBuilder builder) {
             builder.bindProjectType(KOTLIN_JVM_LIBRARY, KotlinJvmLibrary.class,
                     (context, definition, buildModel) -> {
-                        Project project = context.getProject();
-                        project.getPlugins().apply("org.jetbrains.kotlin.jvm");
+                        Services services = context.getObjectFactory().newInstance(Services.class);
+                        services.getPluginManager().apply("org.jetbrains.kotlin.jvm");
                         ((DefaultKotlinJvmLibraryBuildModel)buildModel).setKotlinJvmExtension(
-                                project.getExtensions().getByType(KotlinJvmProjectExtension.class)
+                                services.getProject().getExtensions().getByType(KotlinJvmProjectExtension.class)
                         );
                         ((DefaultKotlinJvmLibraryBuildModel)buildModel).setJavaPluginExtension(
-                                project.getExtensions().getByType(JavaPluginExtension.class)
+                                services.getProject().getExtensions().getByType(JavaPluginExtension.class)
                         );
 
-                        linkDslModelToPlugin(definition, buildModel, project.getConfigurations(), project.getTasks());
+                        linkDslModelToPlugin(definition, buildModel, services.getProject().getConfigurations(), services.getProject().getTasks());
                     })
                 .withUnsafeDefinition()
+                .withUnsafeApplyAction()
                 .withBuildModelImplementationType(DefaultKotlinJvmLibraryBuildModel.class);
         }
 
@@ -62,6 +66,14 @@ public abstract class StandaloneKotlinJvmLibraryPlugin implements Plugin<Project
             configurations.getByName("testRuntimeOnly").fromDependencyCollector(dslModel.getTesting().getDependencies().getRuntimeOnly());
 
             tasks.withType(Test.class).configureEach(Test::useJUnitPlatform);
+        }
+
+        interface Services {
+            @Inject
+            PluginManager getPluginManager();
+
+            @Inject
+            Project getProject();
         }
     }
 }
