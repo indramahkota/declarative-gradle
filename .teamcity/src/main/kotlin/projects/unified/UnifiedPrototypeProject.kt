@@ -14,7 +14,6 @@ object UnifiedPrototypeProject : Project({
     name = "Unified Prototype"
 
     params {
-        param("env.JAVA_HOME", "%linux.java17.openjdk.64bit%")
         param("env.ANDROID_HOME", "/opt/android/sdk")
         param("env.ANDROID_SDK_ROOT", "/opt/android/sdk")
         // Add Swift to the path
@@ -37,7 +36,7 @@ object UnifiedPrototypeProject : Project({
                 vcsRootExtId = DslContext.settingsRootId.toString()
                 provider = github {
                     authType = token {
-                        token = "%github.bot-gradle.declarative-gradle.token%"
+                        token = "%github.bot-teamcity.token%"
                     }
                     filterAuthorRole = PullRequests.GitHubRoleFilter.EVERYBODY
                 }

@@ -5,7 +5,7 @@ import projects.unified.UnifiedPrototypeProject
 
 object DeclarativeGradleProject : Project({
     params {
-        param("env.GRADLE_ENTERPRISE_ACCESS_KEY", "%e.grdev.net.access.key%")
+        param("env.DEVELOCITY_ACCESS_KEY", "%ge.gradle.org.access.key%")
     }
 
     subProject(UnifiedPrototypeProject)
