@@ -28,7 +28,10 @@ import com.dropbox.gradle.plugins.dependencyguard.DependencyGuardPluginExtension
 import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.text.WordUtils;
-import org.gradle.api.*;
+import org.gradle.api.ExtensiblePolymorphicDomainObjectContainer;
+import org.gradle.api.JavaVersion;
+import org.gradle.api.NamedDomainObjectContainer;
+import org.gradle.api.Project;
 import org.gradle.api.experimental.android.AndroidSoftware;
 import org.gradle.api.experimental.android.application.AndroidApplication;
 import org.gradle.api.experimental.android.extensions.BaselineProfile;

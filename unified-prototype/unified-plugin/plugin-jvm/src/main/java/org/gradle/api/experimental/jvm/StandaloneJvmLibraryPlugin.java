@@ -5,16 +5,18 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.dsl.DependencyFactory;
 import org.gradle.api.experimental.jvm.internal.JvmPluginSupport;
-import org.gradle.api.file.ProjectLayout;
-import org.gradle.api.internal.plugins.BindsProjectType;
-import org.gradle.api.internal.plugins.ProjectTypeBindingBuilder;
-import org.gradle.api.internal.plugins.ProjectTypeBinding;
 import org.gradle.api.plugins.JavaLibraryPlugin;
 import org.gradle.api.plugins.JavaPluginExtension;
+import org.gradle.api.plugins.PluginManager;
 import org.gradle.api.plugins.internal.JavaPluginHelper;
 import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskContainer;
+import org.gradle.features.annotations.BindsProjectType;
+import org.gradle.features.binding.ProjectTypeBinding;
+import org.gradle.features.binding.ProjectTypeBindingBuilder;
+import org.gradle.features.file.ProjectFeatureLayout;
+import org.gradle.features.registration.ConfigurationRegistrar;
 import org.gradle.jvm.toolchain.JavaToolchainService;
 
 import javax.inject.Inject;
@@ -39,26 +41,49 @@ public abstract class StandaloneJvmLibraryPlugin implements Plugin<Project> {
         public void bind(ProjectTypeBindingBuilder builder) {
             builder.bindProjectType(JVM_LIBRARY, JvmLibrary.class,
                     (context, definition, buildModel) -> {
-                        Project project = context.getProject();
-                        project.getPlugins().apply(JavaLibraryPlugin.class);
+                        Services services = context.getObjectFactory().newInstance(Services.class);
+
+                        services.getPluginManager().apply(JavaLibraryPlugin.class);
                         ((DefaultJavaBuildModel) buildModel).setJavaPluginExtension(
-                                project.getExtensions().getByType(JavaPluginExtension.class)
+                                services.getProject().getExtensions().getByType(JavaPluginExtension.class)
                         );
 
                         context.getObjectFactory().newInstance(ModelToPluginLinker.class).link(
                                 definition,
                                 buildModel,
-                                project.getConfigurations(),
-                                project.getTasks(),
-                                project.getLayout(),
-                                project.getProviders(),
-                                project.getDependencyFactory(),
-                                JavaPluginHelper.getJavaComponent(project).getMainFeature().getSourceSet()
+                                services.getConfigurationRegistrar(),
+                                services.getProject().getConfigurations(),
+                                services.getProject().getTasks(),
+                                services.getProjectFeatureLayout(),
+                                services.getProviderFactory(),
+                                services.getDependencyFactory(),
+                                JavaPluginHelper.getJavaComponent(services.getProject()).getMainFeature().getSourceSet()
                         );
                     }
             )
             .withUnsafeDefinition()
+            .withUnsafeApplyAction()
             .withBuildModelImplementationType(DefaultJavaBuildModel.class);
+        }
+
+        interface Services {
+            @Inject
+            PluginManager getPluginManager();
+
+            @Inject
+            ConfigurationRegistrar getConfigurationRegistrar();
+
+            @Inject
+            ProjectFeatureLayout getProjectFeatureLayout();
+
+            @Inject
+            ProviderFactory getProviderFactory();
+
+            @Inject
+            DependencyFactory getDependencyFactory();
+
+            @Inject
+            Project getProject();
         }
     }
 
@@ -73,9 +98,10 @@ public abstract class StandaloneJvmLibraryPlugin implements Plugin<Project> {
         private void link(
                 JvmLibrary dslModel,
                 JavaBuildModel buildModel,
+                ConfigurationRegistrar configurationRegistrar,
                 ConfigurationContainer configurations,
                 TaskContainer tasks,
-                ProjectLayout projectLayout,
+                ProjectFeatureLayout projectLayout,
                 ProviderFactory providers,
                 DependencyFactory dependencyFactory,
                 SourceSet commonSources) {

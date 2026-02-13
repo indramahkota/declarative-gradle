@@ -4,10 +4,13 @@ import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.experimental.swift.internal.DefaultSwiftLibraryBuildModel;
 import org.gradle.api.experimental.swift.internal.SwiftPluginSupport;
-import org.gradle.api.internal.plugins.BindsProjectType;
-import org.gradle.api.internal.plugins.ProjectTypeBinding;
-import org.gradle.api.internal.plugins.ProjectTypeBindingBuilder;
+import org.gradle.api.plugins.PluginManager;
+import org.gradle.features.annotations.BindsProjectType;
+import org.gradle.features.binding.ProjectTypeBinding;
+import org.gradle.features.binding.ProjectTypeBindingBuilder;
 import org.gradle.language.swift.plugins.SwiftLibraryPlugin;
+
+import javax.inject.Inject;
 
 @SuppressWarnings("UnstableApiUsage")
 @BindsProjectType(StandaloneSwiftLibraryPlugin.Binding.class)
@@ -19,13 +22,15 @@ public abstract class StandaloneSwiftLibraryPlugin implements Plugin<Project> {
         @Override
         public void bind(ProjectTypeBindingBuilder builder) {
             builder.bindProjectType(SWIFT_LIBRARY, SwiftLibrary.class, (context, definition, buildModel) -> {
-                context.getProject().getPlugins().apply(SwiftLibraryPlugin.class);
+                Services services = context.getObjectFactory().newInstance(Services.class);
+                services.getPluginManager().apply(SwiftLibraryPlugin.class);
 
-                ((DefaultSwiftLibraryBuildModel) buildModel).setSwiftLibrary(context.getProject().getExtensions().getByType(org.gradle.language.swift.SwiftLibrary.class));
+                ((DefaultSwiftLibraryBuildModel) buildModel).setSwiftLibrary(services.getProject().getExtensions().getByType(org.gradle.language.swift.SwiftLibrary.class));
 
                 linkDefinitionToPlugin(definition, buildModel);
             })
             .withUnsafeDefinition()
+            .withUnsafeApplyAction()
             .withBuildModelImplementationType(DefaultSwiftLibraryBuildModel.class);
         }
 
@@ -35,6 +40,14 @@ public abstract class StandaloneSwiftLibraryPlugin implements Plugin<Project> {
 
             model.getImplementationDependencies().getDependencies().addAllLater(definition.getDependencies().getImplementation().getDependencies());
             model.getApiDependencies().getDependencies().addAllLater(definition.getDependencies().getApi().getDependencies());
+        }
+
+        interface Services {
+            @Inject
+            PluginManager getPluginManager();
+
+            @Inject
+            Project getProject();
         }
     }
 

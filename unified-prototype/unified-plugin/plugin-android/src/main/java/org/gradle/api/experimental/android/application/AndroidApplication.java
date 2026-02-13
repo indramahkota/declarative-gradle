@@ -17,7 +17,6 @@
 package org.gradle.api.experimental.android.application;
 
 import com.android.build.api.dsl.ApplicationBaseFlavor;
-import org.gradle.api.Action;
 import org.gradle.api.experimental.android.AndroidSoftware;
 import org.gradle.api.experimental.android.extensions.DataBinding;
 import org.gradle.api.experimental.android.extensions.DependencyGuard;
@@ -25,11 +24,11 @@ import org.gradle.api.experimental.android.extensions.Firebase;
 import org.gradle.api.experimental.android.extensions.ViewBinding;
 import org.gradle.api.experimental.android.nia.DimensionStrategy;
 import org.gradle.api.experimental.android.nia.Flavors;
-import org.gradle.api.internal.plugins.Definition;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Nested;
-import org.gradle.declarative.dsl.model.annotations.HiddenInDefinition;
+import org.gradle.features.binding.Definition;
 
+@SuppressWarnings("UnstableApiUsage")
 public interface AndroidApplication extends AndroidSoftware, Definition<AndroidApplicationBuildModel> {
     /**
      * @see ApplicationBaseFlavor#setVersionName(String)

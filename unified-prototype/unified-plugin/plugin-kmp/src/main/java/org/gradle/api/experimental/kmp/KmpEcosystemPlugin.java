@@ -5,11 +5,11 @@ import org.gradle.api.experimental.jvm.JvmEcosystemConventionsPlugin;
 import org.gradle.api.experimental.kotlin.StandaloneKotlinJvmApplicationPlugin;
 import org.gradle.api.experimental.kotlin.StandaloneKotlinJvmLibraryPlugin;
 import org.gradle.api.initialization.Settings;
-import org.gradle.api.internal.plugins.software.RegistersSoftwareTypes;
+import org.gradle.features.annotations.RegistersProjectFeatures;
 
 
 @SuppressWarnings("UnstableApiUsage")
-@RegistersSoftwareTypes({
+@RegistersProjectFeatures({
         StandaloneKmpLibraryPlugin.class,
         StandaloneKmpApplicationPlugin.class,
         StandaloneKotlinJvmLibraryPlugin.class,

@@ -11,9 +11,12 @@ import org.gradle.api.experimental.android.extensions.testing.AndroidTestDepende
 import org.gradle.api.experimental.android.extensions.testing.TestOptions;
 import org.gradle.api.experimental.android.nia.NiaSupport;
 import org.gradle.api.experimental.android.test.internal.DefaultAndroidTestBuildModel;
-import org.gradle.api.internal.plugins.BindsProjectType;
-import org.gradle.api.internal.plugins.ProjectTypeBinding;
-import org.gradle.api.internal.plugins.ProjectTypeBindingBuilder;
+import org.gradle.api.plugins.PluginManager;
+import org.gradle.features.annotations.BindsProjectType;
+import org.gradle.features.binding.ProjectTypeBinding;
+import org.gradle.features.binding.ProjectTypeBindingBuilder;
+
+import javax.inject.Inject;
 
 import static org.gradle.api.experimental.android.AndroidBindingSupport.DEFAULT_MIN_ANDROID_SDK;
 import static org.gradle.api.experimental.android.AndroidSupport.ifPresent;
@@ -30,19 +33,21 @@ public abstract class StandaloneAndroidTestPlugin implements Plugin<Project> {
         @Override
         public void bind(ProjectTypeBindingBuilder builder) {
             builder.bindProjectType(ANDROID_TEST, AndroidTest.class, (context, definition, buildModel) -> {
+                Services services = context.getObjectFactory().newInstance(Services.class);
+
                 // Setup Android software conventions
                 definition.getMinSdk().convention(DEFAULT_MIN_ANDROID_SDK);
                 definition.getBuildConfig().convention(false);
 
                 // Register an afterEvaluate listener before we apply the Android plugin to ensure we can
                 // run actions before Android does.
-                context.getProject().afterEvaluate(p -> linkDefinitionToPlugin(p, definition, buildModel));
+                services.getProject().afterEvaluate(p -> linkDefinitionToPlugin(p, definition, buildModel));
 
                 // Apply the official Android plugin and support for Kotlin
-                context.getProject().getPlugins().apply("com.android.test");
-                context.getProject().getPlugins().apply("org.jetbrains.kotlin.android");
+                services.getPluginManager().apply("com.android.test");
+                services.getPluginManager().apply("org.jetbrains.kotlin.android");
 
-                ((DefaultAndroidTestBuildModel)buildModel).setTestExtension(context.getProject().getExtensions().getByType(TestExtension.class));
+                ((DefaultAndroidTestBuildModel)buildModel).setTestExtension(services.getProject().getExtensions().getByType(TestExtension.class));
 
                 // Setup other feature extension conventions
                 definition.getBaselineProfile().getEnabled().convention(false);
@@ -53,6 +58,7 @@ public abstract class StandaloneAndroidTestPlugin implements Plugin<Project> {
                 definition.getTestOptions().getReturnDefaultValues().convention(false);
             })
             .withUnsafeDefinition()
+            .withUnsafeApplyAction()
             .withBuildModelImplementationType(DefaultAndroidTestBuildModel.class);
         }
 
@@ -108,6 +114,14 @@ public abstract class StandaloneAndroidTestPlugin implements Plugin<Project> {
                 NiaSupport.configureNiaTest(project, definition);
             }
             ifPresent(definition.getBuildConfig(), android.getBuildFeatures()::setBuildConfig);
+        }
+
+        interface Services {
+            @Inject
+            PluginManager getPluginManager();
+
+            @Inject
+            Project getProject();
         }
     }
 

@@ -2,9 +2,9 @@ package org.gradle.api.experimental.kmp;
 
 import org.gradle.api.Action;
 import org.gradle.api.PolymorphicDomainObjectContainer;
-import org.gradle.declarative.dsl.model.annotations.HiddenInDefinition;
 import org.gradle.api.internal.DefaultPolymorphicDomainObjectContainer;
 import org.gradle.api.internal.collections.DomainObjectCollectionFactory;
+import org.gradle.declarative.dsl.model.annotations.HiddenInDefinition;
 
 import javax.inject.Inject;
 

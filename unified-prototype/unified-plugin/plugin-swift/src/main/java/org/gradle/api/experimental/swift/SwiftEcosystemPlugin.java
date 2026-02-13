@@ -2,9 +2,10 @@ package org.gradle.api.experimental.swift;
 
 import org.gradle.api.Plugin;
 import org.gradle.api.initialization.Settings;
-import org.gradle.api.internal.plugins.software.RegistersSoftwareTypes;
+import org.gradle.features.annotations.RegistersProjectFeatures;
 
-@RegistersSoftwareTypes({
+@SuppressWarnings("UnstableApiUsage")
+@RegistersProjectFeatures({
         StandaloneSwiftLibraryPlugin.class,
         StandaloneSwiftApplicationPlugin.class})
 public class SwiftEcosystemPlugin implements Plugin<Settings> {

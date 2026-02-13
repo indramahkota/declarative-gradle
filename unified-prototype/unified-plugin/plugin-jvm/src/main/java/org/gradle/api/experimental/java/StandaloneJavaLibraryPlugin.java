@@ -6,13 +6,14 @@ import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.experimental.jvm.DefaultJavaBuildModel;
 import org.gradle.api.experimental.jvm.JavaBuildModel;
 import org.gradle.api.experimental.jvm.internal.JvmPluginSupport;
-import org.gradle.api.internal.plugins.*;
 import org.gradle.api.plugins.JavaLibraryPlugin;
 import org.gradle.api.plugins.JavaPluginExtension;
-import org.gradle.api.plugins.JvmTestSuitePlugin;
 import org.gradle.api.plugins.PluginManager;
 import org.gradle.api.plugins.jvm.JvmTestSuite;
 import org.gradle.api.tasks.TaskContainer;
+import org.gradle.features.annotations.BindsProjectType;
+import org.gradle.features.binding.ProjectTypeBinding;
+import org.gradle.features.binding.ProjectTypeBindingBuilder;
 import org.gradle.jvm.toolchain.JavaToolchainService;
 import org.gradle.testing.base.TestingExtension;
 
@@ -40,20 +41,21 @@ public abstract class StandaloneJavaLibraryPlugin implements Plugin<Project> {
         public void bind(ProjectTypeBindingBuilder builder) {
             builder.bindProjectType(JAVA_LIBRARY, JavaLibrary.class,
                     (context, definition, buildModel) -> {
-                        Project project = context.getProject();
-                        project.getPlugins().apply(JavaLibraryPlugin.class);
-                        ((DefaultJavaBuildModel) buildModel).setJavaPluginExtension(project.getExtensions().getByType(JavaPluginExtension.class));
+                        Services services = context.getObjectFactory().newInstance(Services.class);
+                        services.getPluginManager().apply(JavaLibraryPlugin.class);
+                        ((DefaultJavaBuildModel) buildModel).setJavaPluginExtension(services.getProject().getExtensions().getByType(JavaPluginExtension.class));
 
                         context.getObjectFactory().newInstance(ModelToPluginLinker.class).link(
                                 definition,
                                 buildModel,
-                                project.getPluginManager(),
-                                project.getConfigurations(),
-                                project.getTasks()
+                                services.getPluginManager(),
+                                services.getProject().getConfigurations(),
+                                services.getProject().getTasks()
                         );
                     }
             )
             .withUnsafeDefinition()
+            .withUnsafeApplyAction()
             .withBuildModelImplementationType(DefaultJavaBuildModel.class);
         }
 
@@ -73,6 +75,14 @@ public abstract class StandaloneJavaLibraryPlugin implements Plugin<Project> {
                     JvmPluginSupport.linkTestSourceSourceSetDependencies(definition.getTesting().getDependencies(), buildModel.getJavaPluginExtension(), configurations);
                 });
             }
+        }
+
+        interface Services {
+            @Inject
+            PluginManager getPluginManager();
+
+            @Inject
+            Project getProject();
         }
     }
 }

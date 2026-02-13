@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-package org.gradle.test.fixtures.file;
+package org.gradle.test.fixtures.file
 
 import org.gradle.api.GradleException
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
+import org.junit.rules.TestRule
+import org.junit.runner.Description
 import org.junit.runners.model.Statement
 
-import java.util.regex.Pattern;
-
+import java.util.regex.Pattern
 
 /**
  * A JUnit rule which provides a unique temporary folder for the test.

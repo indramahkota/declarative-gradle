@@ -17,13 +17,14 @@
 package org.gradle.api.experimental.android.library;
 
 import org.gradle.api.experimental.android.AndroidSoftware;
+import org.gradle.api.experimental.android.extensions.Protobuf;
 import org.gradle.api.file.RegularFile;
-import org.gradle.api.internal.plugins.Definition;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
-import org.gradle.api.experimental.android.extensions.Protobuf;
 import org.gradle.api.tasks.Nested;
+import org.gradle.features.binding.Definition;
 
+@SuppressWarnings("UnstableApiUsage")
 public interface AndroidLibrary extends AndroidSoftware, Definition<AndroidLibraryBuildModel> {
     @Override
     @Nested

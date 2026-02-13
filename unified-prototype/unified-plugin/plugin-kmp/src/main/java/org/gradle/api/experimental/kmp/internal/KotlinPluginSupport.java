@@ -1,6 +1,5 @@
 package org.gradle.api.experimental.kmp.internal;
 
-import org.gradle.api.Project;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.experimental.common.BasicDependencies;
 import org.gradle.api.experimental.common.LibraryDependencies;

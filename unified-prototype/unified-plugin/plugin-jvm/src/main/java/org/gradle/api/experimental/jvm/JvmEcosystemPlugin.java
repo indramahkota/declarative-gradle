@@ -5,10 +5,10 @@ import org.gradle.api.experimental.java.StandaloneJavaApplicationPlugin;
 import org.gradle.api.experimental.java.StandaloneJavaLibraryPlugin;
 import org.gradle.api.experimental.java.checkstyle.CheckstyleSoftwareFeaturePlugin;
 import org.gradle.api.initialization.Settings;
-import org.gradle.api.internal.plugins.software.RegistersSoftwareTypes;
+import org.gradle.features.annotations.RegistersProjectFeatures;
 
 @SuppressWarnings("UnstableApiUsage")
-@RegistersSoftwareTypes({
+@RegistersProjectFeatures({
         StandaloneJavaApplicationPlugin.class,
         StandaloneJavaLibraryPlugin.class,
         StandaloneJvmLibraryPlugin.class,

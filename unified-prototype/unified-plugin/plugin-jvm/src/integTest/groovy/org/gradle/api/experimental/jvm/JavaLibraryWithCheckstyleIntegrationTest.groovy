@@ -2,7 +2,7 @@ package org.gradle.api.experimental.jvm
 
 import org.gradle.test.fixtures.AbstractSpecification
 
-import static org.gradle.testkit.runner.TaskOutcome.*
+import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 class JavaLibraryWithCheckstyleIntegrationTest extends AbstractSpecification {
     def setup() {
@@ -36,7 +36,7 @@ class JavaLibraryWithCheckstyleIntegrationTest extends AbstractSpecification {
             <!DOCTYPE suppressions PUBLIC
                 "-//Puppy Crawl//DTD Suppressions 1.1//EN"
                 "http://www.puppycrawl.com/dtds/suppressions_1_1.dtd">
-            
+
             <suppressions>
                 <suppress checks="TypeName"
                       files="bad_name.java"/>
@@ -49,7 +49,7 @@ class JavaLibraryWithCheckstyleIntegrationTest extends AbstractSpecification {
         buildFile << """
             javaLibrary {
                 checkstyle { }
-            }    
+            }
         """
         file('src/main/java/org/example/example.java') << """
             package org.example;
@@ -72,7 +72,7 @@ class JavaLibraryWithCheckstyleIntegrationTest extends AbstractSpecification {
         buildFile << """
             javaLibrary {
                 checkstyle { }
-            }    
+            }
         """
         file('src/main/java/org/example/bad_name.java') << """
             package org.example;
@@ -93,7 +93,7 @@ class JavaLibraryWithCheckstyleIntegrationTest extends AbstractSpecification {
         buildFile << """
             javaLibrary {
                 checkstyle { }
-            }    
+            }
         """
         file('src/main/java/org/example/NoViolations.java') << """
             package org.example;
